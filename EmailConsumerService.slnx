@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="EmailConsumerService/EmailConsumerService.csproj" />
+  <Project Path="EmailConsumerService.Tests/EmailConsumerService.Tests.csproj" />
+</Solution>
