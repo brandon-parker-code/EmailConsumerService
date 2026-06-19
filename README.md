@@ -1,14 +1,15 @@
 # Email Consumer Service
 
-A .NET 10 worker that consumes email requests from a Kafka topic and sends them via SendGrid, with automatic SMTP fallback when SendGrid fails.
+A .NET 10 service that consumes email requests from a Kafka topic and sends them via SendGrid, with automatic SMTP fallback when SendGrid fails. It also exposes a versioned HTTP API for publishing messages onto the topic.
 
 ## How it works
 
-1. The service subscribes to a Kafka topic and reads JSON email messages.
-2. Each message is deserialized into an `EmailMessage` object (including attachments).
-3. The handler validates the message and attempts delivery through SendGrid.
-4. If SendGrid throws, the same message is retried through SMTP.
-5. Kafka offsets are committed only after a message is sent successfully.
+1. Messages reach the Kafka topic either from an external producer or via this service's HTTP API (`POST /api/v1/emails`).
+2. The service subscribes to a Kafka topic and reads JSON email messages.
+3. Each message is deserialized into an `EmailMessage` object (including attachments).
+4. The handler validates the message and attempts delivery through SendGrid.
+5. If SendGrid throws, the same message is retried through SMTP.
+6. Kafka offsets are committed only after a message is sent successfully.
 
 ```
 Kafka topic → KafkaEmailConsumer → KafkaEmailMessageProcessor → EmailMessageHandler
@@ -94,6 +95,53 @@ Messages must be JSON with this shape:
 - `to` and `subject` are required.
 - `from` is optional if `DefaultFromEmail` is configured for SendGrid/SMTP.
 - Attachments require `fileName` and `contentBase64`.
+
+## HTTP API
+
+The service also exposes a versioned REST API that publishes a message onto the Kafka topic, so clients can queue an email without a Kafka producer of their own.
+
+- Endpoint: `POST /api/v{version}/emails`
+- Current version: `v1`
+- Success response: `202 Accepted` with `{ "messageId": "<guid>" }`
+- Validation failures return `400 Bad Request` with problem details.
+
+The listen URL is controlled by Kestrel (for example `ASPNETCORE_URLS` or the `Kestrel` section in `appsettings.json`). The examples below assume `http://localhost:8080`.
+
+Insert a Kafka message with curl:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/emails \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to": ["recipient@example.com"],
+    "from": "sender@example.com",
+    "fromName": "Sender Name",
+    "subject": "Hello",
+    "body": "<p>Email body</p>",
+    "isHtml": true,
+    "attachments": [
+      {
+        "fileName": "document.pdf",
+        "contentType": "application/pdf",
+        "contentBase64": "base64-encoded-content"
+      }
+    ]
+  }'
+```
+
+Minimal request (only required fields, relies on the configured default sender):
+
+```bash
+curl -X POST http://localhost:8080/api/v1/emails \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to": ["recipient@example.com"],
+    "subject": "Hello",
+    "body": "Plain text body"
+  }'
+```
+
+The API maps the request onto the same `EmailMessage` contract documented above and publishes it to the configured `Kafka:Topic`; the background consumer then delivers it.
 
 ## Local development
 
@@ -222,13 +270,17 @@ sc.exe delete EmailConsumerService
 
 ```
 EmailConsumerService/
-├── EmailConsumerService/          # Worker application
+├── EmailConsumerService/          # Service application (worker + API)
 │   ├── Configuration/             # Options classes
+│   ├── Contracts/                 # Versioned API request/response models
+│   │   └── V1/
+│   ├── Controllers/               # Versioned API controllers
+│   │   └── V1/
 │   ├── Models/                    # EmailMessage, EmailAttachment
 │   └── Services/
 │       ├── Email/                 # Handlers and senders
 │       │   └── Builders/          # SMTP MailMessage builder
-│       └── Kafka/                 # Consumer and message processor
+│       └── Kafka/                 # Consumer, producer, and message processor
 └── EmailConsumerService.Tests/    # Unit tests
 ```
 

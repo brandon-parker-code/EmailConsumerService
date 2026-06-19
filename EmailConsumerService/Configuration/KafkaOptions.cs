@@ -11,4 +11,14 @@ public class KafkaOptions
     public string GroupId { get; set; } = "email-consumer-service";
 
     public string AutoOffsetReset { get; set; } = "Earliest";
+
+    public string? ClientId { get; set; }
+
+    public bool EnableIdempotence { get; set; } = true;
+
+    public string Acks { get; set; } = "All";
+
+    public string? CompressionType { get; set; }
+
+    public int? MessageMaxBytes { get; set; }
 }

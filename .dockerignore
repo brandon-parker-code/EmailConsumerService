@@ -1,0 +1,16 @@
+**/.git
+**/.vs
+**/.idea
+**/.vscode
+
+**/bin
+**/obj
+**/out
+**/TestResults
+**/artifacts
+
+**/*.user
+**/*.suo
+**/*.log
+
+EmailConsumerService.Tests/

@@ -20,14 +20,16 @@ RUN dotnet publish EmailConsumerService/EmailConsumerService.csproj \
     --no-restore \
     /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/runtime:10.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
 ENV DOTNET_ENVIRONMENT=Production
 
 RUN groupadd --system appgroup && useradd --system --gid appgroup appuser
-USER appuser
 
 COPY --from=build /app/publish .
+RUN mkdir -p /app/logs && chown -R appuser:appgroup /app
+
+USER appuser
 
 ENTRYPOINT ["dotnet", "EmailConsumerService.dll"]

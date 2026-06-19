@@ -1,0 +1,66 @@
+## Ignore Visual Studio / Rider / VS Code workspace files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+artifacts/
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+## NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+project.lock.json
+project.fragment.lock.json
+
+## .NET
+*.dll
+*.exe
+*.pdb
+*.cache
+*.log
+
+## User-specific files
+*.rsuser
+*.pubxml
+*.publishproj
+launchSettings.json.user
+
+## Secrets and local config overrides
+secrets.json
+appsettings.*.local.json
+appsettings.Local.json
+
+## OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+## Test / coverage tooling
+coverage/
+*.opencover.xml
+TestResult.xml
+
+## JetBrains
+_ReSharper*/
+*.[Rr]e[Ss]harper
+
+## Others
+*.swp
+*~
