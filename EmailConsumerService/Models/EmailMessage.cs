@@ -2,6 +2,8 @@ namespace EmailConsumerService.Models;
 
 public class EmailMessage
 {
+    public int EmailLogId { get; set; }
+
     public List<string> To { get; set; } = [];
 
     public string? From { get; set; }

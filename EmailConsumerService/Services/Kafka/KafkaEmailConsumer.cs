@@ -11,6 +11,12 @@ public class KafkaEmailConsumer(
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        // Yield before the blocking consume loop so the host can finish startup.
+        // consumer.Consume(...) blocks synchronously; without this yield the call
+        // runs inline during BackgroundService startup and stalls Kestrel until
+        // the first Kafka event arrives.
+        await Task.Yield();
+
         consumer.Subscribe(options.Topic);
         logger.LogInformation(
             "Subscribed to Kafka topic {Topic} using consumer group {GroupId}.",
@@ -24,6 +30,11 @@ public class KafkaEmailConsumer(
                 try
                 {
                     var consumeResult = consumer.Consume(cancellationToken);
+                    if (consumeResult is null || consumeResult.IsPartitionEOF)
+                    {
+                        continue;
+                    }
+
                     await messageProcessor.ProcessMessageAsync(consumeResult, cancellationToken);
                 }
                 catch (ConsumeException ex)

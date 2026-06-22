@@ -143,6 +143,38 @@ curl -X POST http://localhost:8080/api/v1/emails \
 
 The API maps the request onto the same `EmailMessage` contract documented above and publishes it to the configured `Kafka:Topic`; the background consumer then delivers it.
 
+## Health checks
+
+The service exposes two unversioned health endpoints for liveness and readiness probes:
+
+- `GET /heartbeat` — **liveness**. Returns `200` whenever the process is running. It performs no dependency checks, so a transient database or Kafka outage does not flip it unhealthy.
+- `GET /ready` — **readiness**. Returns `200` only when its dependencies (SQL Server and Kafka) are reachable, otherwise `503`. The response body is JSON describing each check.
+
+Check liveness:
+
+```bash
+curl -i http://localhost:8080/heartbeat
+```
+
+Check readiness:
+
+```bash
+curl -i http://localhost:8080/ready
+```
+
+A healthy `/ready` response looks like:
+
+```json
+{
+  "status": "Healthy",
+  "totalDurationMs": 12.4,
+  "checks": [
+    { "name": "database", "status": "Healthy", "description": null, "durationMs": 8.1 },
+    { "name": "kafka", "status": "Healthy", "description": null, "durationMs": 4.2 }
+  ]
+}
+```
+
 ## Local development
 
 Run from the project folder:
@@ -271,17 +303,21 @@ sc.exe delete EmailConsumerService
 ```
 EmailConsumerService/
 ├── EmailConsumerService/          # Service application (worker + API)
-│   ├── Configuration/             # Options classes
+│   ├── Configuration/             # Options classes (Kafka, SendGrid, SMTP, Database)
 │   ├── Contracts/                 # Versioned API request/response models
 │   │   └── V1/
 │   ├── Controllers/               # Versioned API controllers
 │   │   └── V1/
+│   ├── HealthChecks/              # Liveness/readiness checks and JSON writer
 │   ├── Models/                    # EmailMessage, EmailAttachment
+│   ├── Repositories/              # tblEmailLog data access (repository pattern)
 │   └── Services/
 │       ├── Email/                 # Handlers and senders
-│       │   └── Builders/          # SMTP MailMessage builder
-│       └── Kafka/                 # Consumer, producer, and message processor
-└── EmailConsumerService.Tests/    # Unit tests
+│       │   └── Factories/         # SMTP MailMessage factory
+│       └── Kafka/                 # Consumer and message processor
+│           └── Factories/         # Producer/consumer client factories
+├── EmailConsumerService.Tests/    # Unit tests
+└── scripts/                       # Deployment scripts (Windows Service install)
 ```
 
 ## Troubleshooting

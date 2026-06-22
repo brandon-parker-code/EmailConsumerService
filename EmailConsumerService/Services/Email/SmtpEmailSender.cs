@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Mail;
 using EmailConsumerService.Configuration;
 using EmailConsumerService.Models;
-using EmailConsumerService.Services.Email.Builders;
+using EmailConsumerService.Services.Email.Factories;
 
 namespace EmailConsumerService.Services.Email;
 

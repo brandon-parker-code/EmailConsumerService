@@ -1,5 +1,5 @@
 using EmailConsumerService.Models;
-using EmailConsumerService.Services.Email.Builders;
+using EmailConsumerService.Services.Email.Factories;
 
 namespace EmailConsumerService.Tests;
 

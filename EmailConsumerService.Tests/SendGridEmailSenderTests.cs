@@ -86,6 +86,31 @@ public class SendGridEmailSenderTests
     }
 
     [Fact]
+    public async Task SendAsync_WhenSendSucceeds_ReturnsSendGridMessageId()
+    {
+        var handler = new CaptureHttpHandler { MessageId = "sendgrid-id-123" };
+        var sender = CreateSender(handler);
+        var message = CreateValidMessage();
+        message.EmailLogId = 42;
+
+        var sendGridMessageId = await sender.SendAsync(message);
+
+        Assert.Equal("sendgrid-id-123", sendGridMessageId);
+    }
+
+    [Fact]
+    public async Task SendAsync_WhenResponseHasNoMessageIdHeader_ReturnsNull()
+    {
+        var handler = new CaptureHttpHandler { MessageId = null };
+        var sender = CreateSender(handler);
+        var message = CreateValidMessage();
+
+        var sendGridMessageId = await sender.SendAsync(message);
+
+        Assert.Null(sendGridMessageId);
+    }
+
+    [Fact]
     public async Task SendAsync_WhenMessageHasAttachment_IncludesAttachmentInRequest()
     {
         var handler = new CaptureHttpHandler();

@@ -1,9 +1,11 @@
+using Confluent.Kafka;
 using EmailConsumerService.Contracts.V1;
 using EmailConsumerService.Controllers.V1;
 using EmailConsumerService.Models;
 using EmailConsumerService.Services.Kafka;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace EmailConsumerService.Tests;
@@ -11,11 +13,13 @@ namespace EmailConsumerService.Tests;
 public class EmailsControllerTests
 {
     private readonly Mock<IKafkaEmailProducer> _emailProducer = new();
+    private readonly Mock<ILogger<EmailsController>> _logger = new();
 
-    private EmailsController CreateController() => new(_emailProducer.Object);
+    private EmailsController CreateController() => new(_emailProducer.Object, _logger.Object);
 
     private static SendEmailRequest CreateValidRequest() => new()
     {
+        EmailLogId = 42,
         To = ["recipient@example.com"],
         Subject = "Test subject",
         Body = "Test body",
@@ -46,6 +50,7 @@ public class EmailsControllerTests
         await controller.SendEmail(request, cancellationToken);
 
         Assert.NotNull(produced);
+        Assert.Equal(42, produced.EmailLogId);
         Assert.Equal(request.To, produced.To);
         Assert.Equal("Test subject", produced.Subject);
         Assert.Equal("Test body", produced.Body);
@@ -71,6 +76,24 @@ public class EmailsControllerTests
         Assert.Equal(StatusCodes.Status202Accepted, accepted.StatusCode);
         var response = Assert.IsType<SendEmailResponse>(accepted.Value);
         Assert.Equal("message-123", response.MessageId);
+    }
+
+    [Fact]
+    public async Task SendEmail_WhenProducerFails_ReturnsServiceUnavailable()
+    {
+        var controller = CreateController();
+        var request = CreateValidRequest();
+
+        _emailProducer
+            .Setup(producer => producer.ProduceAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new KafkaException(new Error(ErrorCode.Local_MsgTimedOut)));
+
+        var result = await controller.SendEmail(request, CancellationToken.None);
+
+        var objectResult = Assert.IsType<ObjectResult>(result.Result);
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, objectResult.StatusCode);
+        var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, problem.Status);
     }
 
     [Fact]

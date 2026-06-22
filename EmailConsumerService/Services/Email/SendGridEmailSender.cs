@@ -10,7 +10,7 @@ public class SendGridEmailSender(
     SendGridClient sendGridClient,
     ILogger<SendGridEmailSender> logger) : ISendGridEmailSender
 {
-    public async Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
+    public async Task<string?> SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
     {
         var fromEmail = string.IsNullOrWhiteSpace(message.From)
             ? options.DefaultFromEmail
@@ -82,9 +82,19 @@ public class SendGridEmailSender(
                 $"SendGrid request failed with status {(int)response.StatusCode}.");
         }
 
+        var sendGridMessageId = ExtractMessageId(response);
+
         logger.LogInformation(
-            "Successfully sent email to {Recipients} with subject {Subject}.",
+            "Successfully sent email to {Recipients} with subject {Subject}. SendGrid message id {SendGridMessageId}.",
             string.Join(", ", message.To),
-            message.Subject);
+            message.Subject,
+            sendGridMessageId);
+
+        return sendGridMessageId;
     }
+
+    private static string? ExtractMessageId(SendGrid.Response response) =>
+        response.Headers.TryGetValues("X-Message-Id", out var values)
+            ? values.FirstOrDefault()
+            : null;
 }

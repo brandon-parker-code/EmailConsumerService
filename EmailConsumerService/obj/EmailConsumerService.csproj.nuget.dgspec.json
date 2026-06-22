@@ -10,7 +10,7 @@
         "projectUniqueName": "C:\\Users\\brandon\\source\\repos\\EmailConsumerService\\EmailConsumerService\\EmailConsumerService.csproj",
         "projectName": "EmailConsumerService",
         "projectPath": "C:\\Users\\brandon\\source\\repos\\EmailConsumerService\\EmailConsumerService\\EmailConsumerService.csproj",
-        "packagesPath": "C:\\Users\\brandon\\.nuget\\packages\\",
+        "packagesPath": "C:\\Users\\brandon\\AppData\\Local\\Temp\\cursor-sandbox-cache\\e85ae924ecb5528867c6fcb2bb522e58\\nuget",
         "outputPath": "C:\\Users\\brandon\\source\\repos\\EmailConsumerService\\EmailConsumerService\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
@@ -64,6 +64,10 @@
             "Confluent.Kafka": {
               "target": "Package",
               "version": "[2.8.0, )"
+            },
+            "Microsoft.Data.SqlClient": {
+              "target": "Package",
+              "version": "[7.0.1, )"
             },
             "Microsoft.Extensions.Hosting.WindowsServices": {
               "target": "Package",

@@ -4,6 +4,8 @@ namespace EmailConsumerService.Contracts.V1;
 
 public class SendEmailRequest
 {
+    public int EmailLogId { get; set; }
+
     [Required]
     [MinLength(1, ErrorMessage = "At least one recipient is required.")]
     public List<string> To { get; set; } = [];

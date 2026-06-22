@@ -6,6 +6,8 @@ internal sealed class CaptureHttpHandler : HttpMessageHandler
 {
     public string? LastRequestBody { get; private set; }
 
+    public string? MessageId { get; set; } = "sg-message-id";
+
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
@@ -14,6 +16,13 @@ internal sealed class CaptureHttpHandler : HttpMessageHandler
             ? null
             : await request.Content.ReadAsStringAsync(cancellationToken);
 
-        return new HttpResponseMessage(HttpStatusCode.Accepted);
+        var response = new HttpResponseMessage(HttpStatusCode.Accepted);
+
+        if (MessageId is not null)
+        {
+            response.Headers.Add("X-Message-Id", MessageId);
+        }
+
+        return response;
     }
 }

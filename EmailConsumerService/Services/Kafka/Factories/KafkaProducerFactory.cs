@@ -1,7 +1,7 @@
 using Confluent.Kafka;
 using EmailConsumerService.Configuration;
 
-namespace EmailConsumerService.Services.Kafka;
+namespace EmailConsumerService.Services.Kafka.Factories;
 
 public static class KafkaProducerFactory
 {
@@ -25,7 +25,8 @@ public static class KafkaProducerFactory
             BootstrapServers = options.BootstrapServers,
             ClientId = string.IsNullOrWhiteSpace(options.ClientId) ? options.GroupId : options.ClientId,
             EnableIdempotence = options.EnableIdempotence,
-            Acks = ParseAcks(options.Acks)
+            Acks = ParseAcks(options.Acks),
+            MessageTimeoutMs = options.MessageTimeoutMs
         };
 
         if (options.MessageMaxBytes is int messageMaxBytes)

@@ -1,6 +1,6 @@
 using Confluent.Kafka;
 using EmailConsumerService.Configuration;
-using EmailConsumerService.Services.Kafka;
+using EmailConsumerService.Services.Kafka.Factories;
 
 namespace EmailConsumerService.Tests;
 
@@ -93,6 +93,25 @@ public class KafkaProducerFactoryTests
         var config = KafkaProducerFactory.CreateConfig(options);
 
         Assert.Equal(5_242_880, config.MessageMaxBytes);
+    }
+
+    [Fact]
+    public void CreateConfig_AppliesDefaultMessageTimeout()
+    {
+        var config = KafkaProducerFactory.CreateConfig(CreateOptions());
+
+        Assert.Equal(10_000, config.MessageTimeoutMs);
+    }
+
+    [Fact]
+    public void CreateConfig_UsesConfiguredMessageTimeout()
+    {
+        var options = CreateOptions();
+        options.MessageTimeoutMs = 5_000;
+
+        var config = KafkaProducerFactory.CreateConfig(options);
+
+        Assert.Equal(5_000, config.MessageTimeoutMs);
     }
 
     [Fact]

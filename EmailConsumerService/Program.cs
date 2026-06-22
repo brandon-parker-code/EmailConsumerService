@@ -1,10 +1,14 @@
 using Asp.Versioning;
 using EmailConsumerService;
 using EmailConsumerService.Configuration;
+using EmailConsumerService.HealthChecks;
+using EmailConsumerService.Repositories;
 using EmailConsumerService.Services.Email;
-using EmailConsumerService.Services.Email.Builders;
+using EmailConsumerService.Services.Email.Factories;
 using EmailConsumerService.Services.Kafka;
+using EmailConsumerService.Services.Kafka.Factories;
 using Confluent.Kafka;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting.WindowsServices;
 using Microsoft.Extensions.Options;
 using SendGrid;
@@ -53,10 +57,13 @@ builder.Services.Configure<SendGridOptions>(
     builder.Configuration.GetSection(SendGridOptions.SectionName));
 builder.Services.Configure<SmtpOptions>(
     builder.Configuration.GetSection(SmtpOptions.SectionName));
+builder.Services.Configure<DatabaseOptions>(
+    builder.Configuration.GetSection(DatabaseOptions.SectionName));
 
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<KafkaOptions>>().Value);
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<SendGridOptions>>().Value);
 builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<SmtpOptions>>().Value);
+builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<DatabaseOptions>>().Value);
 
 builder.Services.AddSingleton<IConsumer<string, string>>(sp =>
     KafkaConsumerFactory.Create(sp.GetRequiredService<KafkaOptions>()));
@@ -65,6 +72,7 @@ builder.Services.AddSingleton<IProducer<string, string>>(sp =>
 builder.Services.AddSingleton<IKafkaEmailProducer, KafkaEmailProducer>();
 builder.Services.AddSingleton<SendGridClient>(sp =>
     new SendGridClient(sp.GetRequiredService<SendGridOptions>().ApiKey));
+builder.Services.AddSingleton<IEmailLogRepository, EmailLogRepository>();
 builder.Services.AddSingleton<ISmtpMailMessageFactory, SmtpMailMessageFactory>();
 builder.Services.AddSingleton<ISendGridEmailSender, SendGridEmailSender>();
 builder.Services.AddSingleton<ISmtpEmailSender, SmtpEmailSender>();
@@ -73,11 +81,29 @@ builder.Services.AddSingleton<IKafkaEmailMessageProcessor, KafkaEmailMessageProc
 builder.Services.AddSingleton<IKafkaEmailConsumer, KafkaEmailConsumer>();
 builder.Services.AddHostedService<Worker>();
 
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"])
+    .AddCheck<KafkaHealthCheck>("kafka", tags: ["ready"]);
+
 try
 {
     var app = builder.Build();
 
     app.MapControllers();
+
+    // Liveness: the process is up and the pipeline responds. No dependency checks,
+    // so a transient DB/Kafka outage doesn't cause the orchestrator to kill the pod.
+    app.MapHealthChecks("/heartbeat", new HealthCheckOptions
+    {
+        Predicate = _ => false
+    });
+
+    // Readiness: only route traffic/work here once dependencies are reachable.
+    app.MapHealthChecks("/ready", new HealthCheckOptions
+    {
+        Predicate = registration => registration.Tags.Contains("ready"),
+        ResponseWriter = HealthCheckResponseWriter.WriteJsonAsync
+    });
 
     app.Run();
 }

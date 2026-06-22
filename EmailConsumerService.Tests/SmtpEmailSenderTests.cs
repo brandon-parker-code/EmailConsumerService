@@ -1,7 +1,7 @@
 using EmailConsumerService.Configuration;
 using EmailConsumerService.Models;
 using EmailConsumerService.Services.Email;
-using EmailConsumerService.Services.Email.Builders;
+using EmailConsumerService.Services.Email.Factories;
 using Microsoft.Extensions.Logging;
 using Moq;
 

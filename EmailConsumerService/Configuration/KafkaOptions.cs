@@ -21,4 +21,11 @@ public class KafkaOptions
     public string? CompressionType { get; set; }
 
     public int? MessageMaxBytes { get; set; }
+
+    /// <summary>
+    /// Maximum time (ms) the producer will spend delivering a message before it
+    /// fails. Bounds how long the HTTP produce path can block when Kafka is
+    /// unreachable (librdkafka's default is 300000 = 5 minutes).
+    /// </summary>
+    public int MessageTimeoutMs { get; set; } = 10_000;
 }
